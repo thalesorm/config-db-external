@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model action {
+  id                 String               @id
+  name               String
+  description        String               @db.VarChar(1000)
+  startDate          DateTime
+  endDate            DateTime
+  status             action_status
+  avatar             String?
+  type               action_type
+  idUnity            String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  idDocumentation    String?
+  unity              unity                @relation(fields: [idUnity], references: [id], map: "Action_idUnity_fkey")
+  actioncollaborator actioncollaborator[]
+  documentation      documentation[]
+  meeting            meeting[]
+  step               step[]
+  technology         technology[]         @relation("actiontotechnology")
+
+  @@index([idUnity], map: "Action_idUnity_fkey")
+}
+
+model actioncollaborator {
+  id             String                            @id
+  responsability actioncollaborator_responsability
+  idAction       String
+  idCollaborator String
+  idUser         String
+  createdAt      DateTime                          @default(now())
+  updatedAt      DateTime
+  action         action                            @relation(fields: [idAction], references: [id], map: "ActionCollaborator_idAction_fkey")
+  collaborator   collaborator                      @relation(fields: [idCollaborator], references: [id], map: "ActionCollaborator_idCollaborator_fkey")
+  user           user                              @relation(fields: [idUser], references: [id], map: "ActionCollaborator_idUser_fkey")
+
+  @@index([idAction], map: "ActionCollaborator_idAction_fkey")
+  @@index([idCollaborator], map: "ActionCollaborator_idCollaborator_fkey")
+  @@index([idUser], map: "ActionCollaborator_idUser_fkey")
+}
+
+model address {
+  id           String         @id
+  street       String
+  number       String
+  complement   String?
+  district     String
+  city         String
+  state        String
+  zipCode      String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  collaborator collaborator[]
+}
+
+model collaborator {
+  id                  String               @id
+  phone               String
+  dateOfBirth         DateTime
+  admissionDate       DateTime
+  resignationDate     DateTime?
+  academicFormation   String
+  academicInstitution String?
+  studyArea           String?
+  conclusionYear      Int?
+  cpf                 String
+  rg                  String?
+  idUser              String
+  idAddress           String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+  actioncollaborator  actioncollaborator[]
+  address             address              @relation(fields: [idAddress], references: [id], map: "Collaborator_idAddress_fkey")
+  user                user                 @relation(fields: [idUser], references: [id], map: "Collaborator_idUser_fkey")
+  technology          technology[]         @relation("collaboratortotechnology")
+
+  @@index([idAddress], map: "Collaborator_idAddress_fkey")
+  @@index([idUser], map: "Collaborator_idUser_fkey")
+}
+
+model documentation {
+  id                     String   @id
+  technicalDocumentation String?
+  requirementsGathering  String?
+  usabilityManual        String?
+  satisfactionIndex      String?
+  report                 String?
+  idAction               String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime
+  action                 action   @relation(fields: [idAction], references: [id], onDelete: Cascade, map: "Documentation_idAction_fkey")
+
+  @@index([idAction], map: "Documentation_idAction_fkey")
+}
+
+model log {
+  id         String     @id
+  tableName  String
+  columnName String
+  action     log_action
+  oldValue   String?
+  newValue   String?
+  idObject   String
+  idUser     String
+  createdAt  DateTime   @default(now())
+  user       user       @relation(fields: [idUser], references: [id], map: "Log_idUser_fkey")
+
+  @@index([idUser], map: "Log_idUser_fkey")
+}
+
+model login {
+  id        String   @id
+  ipUser    String
+  idUser    String
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [idUser], references: [id], map: "Login_idUser_fkey")
+
+  @@index([idUser], map: "Login_idUser_fkey")
+}
+
+model meeting {
+  id          String    @id
+  topic       String    @db.LongText
+  description String?   @db.LongText
+  date        DateTime
+  idAction    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  action      action    @relation(fields: [idAction], references: [id], map: "Meeting_idAction_fkey")
+  pending     pending[]
+
+  @@index([idAction], map: "Meeting_idAction_fkey")
+}
+
+model pending {
+  id                 String         @id
+  status             pending_status
+  idMeeting          String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime
+  pendingDescription String         @db.LongText
+  meeting            meeting        @relation(fields: [idMeeting], references: [id], map: "Pending_idMeeting_fkey")
+
+  @@index([idMeeting], map: "Pending_idMeeting_fkey")
+}
+
+model step {
+  id        String      @id
+  name      String
+  status    step_status
+  isChecked Boolean
+  idAction  String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  action    action      @relation(fields: [idAction], references: [id], map: "Step_idAction_fkey")
+
+  @@index([idAction], map: "Step_idAction_fkey")
+}
+
+model technology {
+  id           String         @id
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  action       action[]       @relation("actiontotechnology")
+  collaborator collaborator[] @relation("collaboratortotechnology")
+}
+
+model unity {
+  id        String   @id
+  name      String
+  alias     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  action    action[]
+  user      user[]
+}
+
+model user {
+  id                 String               @id
+  name               String
+  job                String
+  email              String               @unique(map: "User_email_key")
+  password           String
+  avatar             String?
+  status             user_status
+  role               user_role
+  idUnity            String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  actioncollaborator actioncollaborator[]
+  collaborator       collaborator[]
+  log                log[]
+  login              login[]
+  unity              unity                @relation(fields: [idUnity], references: [id], map: "User_idUnity_fkey")
+
+  @@index([idUnity], map: "User_idUnity_fkey")
+}
+
+enum actioncollaborator_responsability {
+  DESIGNER
+  DEVELOPER
+  SUPERVISOR
+  SUPPORT
+}
+
+enum pending_status {
+  PENDING
+  FINISHED
+}
+
+enum step_status {
+  PENDING
+  IN_PROGRESS
+  FINISHED
+}
+
+enum log_action {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum action_status {
+  STARTED
+  FINISHED
+  IN_PROGRESS
+  PAUSED
+  CANCELED
+}
+
+enum user_status {
+  ACTIVE
+  INACTIVE
+  LICENSE
+  VACATION
+}
+
+enum action_type {
+  DEVELOPMENT
+  ACTIVITY
+}
+
+enum user_role {
+  DEFAULT
+  COLLABORATOR
+}
